@@ -11,6 +11,7 @@ import (
 
 const (
 	toolDatabaseQuery   = "database_query"
+	toolExternalDBQuery = "external_db_query"
 	toolDataAnalysis    = "data_analysis"
 	toolWikiReadIssue   = "wiki_read_issue"
 	toolWikiUpdateIssue = "wiki_update_issue"
@@ -115,6 +116,10 @@ var toolHandlePolicies = map[string]toolHandlePolicy{
 		sourceTextKeys: map[string]struct{}{"sql": {}},
 		sourceOutput:   true,
 	},
+	// External database rows carry the database's own identities, not WeKnora
+	// handles, so neither arguments nor results are rewritten. The SQL is not
+	// decoded: a literal such as 'c3' is a value in the external database.
+	toolExternalDBQuery: {opaqueOutput: true},
 	// data_analysis exposes the selected document as a fixed table name, so
 	// its SQL never carries a document handle; only knowledge_id is decoded.
 	toolDataAnalysis: {

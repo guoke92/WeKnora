@@ -138,6 +138,47 @@ builtin_agents:
       rerank_top_k: 5
       rerank_threshold: 0.3
 
+  - id: "builtin-external-db-qa"
+    avatar: "🗄️"
+    is_builtin: true
+    i18n:
+      default:
+        name: "External Database Q&A"
+        description: "Answers questions with read-only SQL over MySQL / PostgreSQL data sources synced into a Wiki-enabled knowledge base"
+      zh-CN:
+        name: "外部数据库问数"
+        description: "基于 Wiki 中的表结构，对已同步的 MySQL / PostgreSQL 数据源执行只读 SQL 并回答问题"
+      zh-TW:
+        name: "外部資料庫問數"
+        description: "基於 Wiki 中的表結構，對已同步的 MySQL / PostgreSQL 資料來源執行唯讀 SQL 並回答問題"
+      ja-JP:
+        name: "外部データベース問い合わせ"
+        description: "Wikiのテーブル構造に基づき、同期済みの MySQL / PostgreSQL データソースに読み取り専用 SQL で回答します"
+      ko-KR:
+        name: "외부 데이터베이스 질의"
+        description: "위키의 테이블 구조를 기반으로 동기화된 MySQL/PostgreSQL 데이터 소스에 읽기 전용 SQL로 답변합니다"
+    config:
+      agent_mode: "smart-reasoning"
+      agent_type: "external-db-qa"
+      system_prompt_id: "external_db_analyst"
+      temperature: 0.3
+      max_completion_tokens: 0
+      max_iterations: 30
+      kb_selection_mode: "all"
+      retrieve_kb_only_when_mentioned: false
+      allowed_tools:
+        - "wiki_search"
+        - "wiki_read_page"
+        - "external_db_query"
+        - "ask_user"
+      web_search_enabled: false
+      web_search_max_results: 0
+      reflection_enabled: true
+      multi_turn_enabled: true
+      embedding_top_k: 5
+      keyword_threshold: 0.3
+      vector_threshold: 0.5
+
   - id: "builtin-wiki-researcher"
     avatar: "📚"
     is_builtin: true

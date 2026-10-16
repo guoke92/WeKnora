@@ -23,6 +23,8 @@ export interface DataSource {
   created_at: string
   updated_at: string
   latest_sync_log?: SyncLog
+  // Non-blocking hint returned on create only, e.g. 'wiki_disabled'.
+  notice?: string
 }
 
 /**
@@ -117,8 +119,14 @@ export function validateConnection(id: string) {
 }
 
 // Validate credentials without persisting (during creation or credential replacement).
-export function validateCredentials(type: string, credentials: Record<string, any>) {
-  return post('/api/v1/datasource/validate-credentials', { type, credentials })
+// settings carries non-secret connection options (e.g. host/database for SQL
+// sources). Omit it for connectors whose connection is fully described by credentials.
+export function validateCredentials(
+  type: string,
+  credentials: Record<string, any>,
+  settings?: Record<string, any>,
+) {
+  return post('/api/v1/datasource/validate-credentials', { type, credentials, settings })
 }
 
 // listResources lists selectable resources for a data source. Pass parentId to

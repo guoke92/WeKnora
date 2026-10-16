@@ -1068,6 +1068,10 @@ func (r *wikiPageRepository) FindSimilarPages(
 
 	q := strings.ToLower(strings.TrimSpace(query))
 
+	if r.db.Dialector != nil && r.db.Dialector.Name() == "sqlite" {
+		return r.findSimilarPagesSQLite(ctx, kbID, q, pageTypes, limit)
+	}
+
 	var rows []types.WikiPageLite
 	if err := r.db.WithContext(ctx).
 		Model(&types.WikiPage{}).

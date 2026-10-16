@@ -994,6 +994,29 @@ export default {
       paths: '同步目录', pathsPlaceholder: '每行一个目录；留空同步整个项目',
       addProject: '添加项目', projectRequired: '请至少添加一个 GitLab 项目',
     },
+    sql: {
+      selectionRequired: '请至少选择一个 Schema 或表',
+      wikiDisabledNotice: '该知识库未开启 Wiki：表文档仅用于检索，不会生成表页。在知识库设置中开启 Wiki 后可生成表页。',
+      user: '用户名',
+      password: '密码',
+      host: '主机',
+      port: '端口',
+      database: '数据库',
+      tlsMode: 'TLS 模式',
+      tlsDisable: '不启用',
+      tlsRequire: '启用 TLS（不校验证书）',
+      tlsVerifyFull: '启用 TLS 并校验证书',
+      connectionHint: '建议使用专用的只读账号。查询在只读事务中执行，但仍建议遵循最小权限原则。',
+      selectionHint: '可选择整个 Schema 或单独的表；选中 Schema 即包含其下所有表。',
+      profileSection: '字段画像',
+      profileEnabled: '基于样本行采集字段画像',
+      profileValues: '采集取值特征（范围、TopK）。敏感字段永不展示取值。',
+      topK: '每列 TopK 取值数',
+      sampleRows: '每表样本行数',
+      maxTables: '单次同步最多表数',
+      maskedColumns: '额外的敏感字段',
+      maskedColumnsHint: '以逗号分隔的字段名，其取值永不展示。password、phone、email 等常见敏感字段会自动脱敏。'
+    },
     seafile: {
       baseUrl: 'Seafile 地址', apiToken: 'API 令牌',
       apiTokenHint: '在 Seafile「设置 → Web API 令牌」中生成；账号对所选资料库有读权限即可，令牌不会随文件下载请求发送。',
@@ -1162,7 +1185,9 @@ export default {
       ima: '同步腾讯 IMA 知识库中的文档、笔记与文件（暂不支持 AI 会话与视频解析）',
       rss: '同步 RSS / Atom 订阅源中的文章',
       gitlab: '同步 GitLab 项目中的文件',
-      seafile: '同步 Seafile 资料库中的目录与文件'
+      seafile: '同步 Seafile 资料库中的目录与文件',
+      mysql: '从 MySQL 表提取结构、字段画像与关系（只读）',
+      postgres: '从 PostgreSQL 表提取结构、字段画像与关系（只读）'
     },
     connector: {
       feishu: '飞书',
@@ -1176,7 +1201,9 @@ export default {
       ima: '腾讯 IMA',
       rss: 'RSS / Atom 订阅',
       gitlab: 'GitLab',
-      seafile: 'Seafile'
+      seafile: 'Seafile',
+      mysql: 'MySQL',
+      postgres: 'PostgreSQL'
     },
     logDetail: {
       startTime: '开始时间',
@@ -1248,7 +1275,9 @@ export default {
       seafile_source_changed: 'Seafile 文件在获取过程中发生变化，下次同步将重试。',
       seafile_invalid_response: 'Seafile 返回了无法解析的响应，请检查服务器版本与反向代理配置。',
       seafile_ssrf_blocked: 'Seafile 文件下载地址被 SSRF 策略拦截，请将 fileserver 域名加入 SSRF_WHITELIST。',
-      seafile_fetch_failed: '从 Seafile 获取文件失败，下次同步将重试。'
+      seafile_fetch_failed: '从 Seafile 获取文件失败，下次同步将重试。',
+      describe_failed: '读取表结构失败，详见服务端日志，下次同步将重试。',
+      max_tables_exceeded: '已达到单次同步的表数上限，部分表被跳过；可调大「单次同步最多表数」或缩小选择范围。'
     },
   },
   ollama: {
@@ -1384,6 +1413,7 @@ export default {
         wikiQa: '未启用 Wiki',
         hybridRagWiki: '未启用任何检索能力',
         dataAnalysis: '需启用 RAG（不支持 FAQ）',
+        externalDbQa: '未开启 Wiki',
         quickAnswer: '快速问答模式需启用 RAG 检索',
         generic: '不适用于当前类型'
       }
@@ -1519,6 +1549,8 @@ export default {
       getDocInfoDesc: '查看文档元数据',
       dbQuery: '查询数据库',
       dbQueryDesc: '查询数据库中的信息',
+      externalDbQuery: '外部数据库查询',
+      externalDbQueryDesc: '对已同步的 MySQL / PostgreSQL 数据源执行只读查询',
       dataAnalysis: '数据分析',
       dataAnalysisDesc: '理解数据文件并进行数据分析',
       dataSchema: '查看数据元信息',
@@ -1830,7 +1862,8 @@ export default {
       shellExec: '执行沙箱命令',
       dataAnalysis: '数据分析',
       dataSchema: '数据结构',
-      databaseQuery: '数据库查询'
+      databaseQuery: '数据库查询',
+      externalDbQuery: '外部数据库查询'
     },
     skillFiles: {
       heading: '技能文件',
@@ -4121,6 +4154,7 @@ export default {
     lengthThousands: '{value} 千字',
     lengthTenThousands: '{value} 万字',
     noDatabaseRecords: '未找到匹配的记录',
+    externalQueryTruncated: '结果已达到行数或大小上限，仅显示前面的行',
     nullValuePlaceholder: '<NULL>',
     chunkCountValue: '{count} 个片段',
     documentDescriptionLabel: '文档描述:',

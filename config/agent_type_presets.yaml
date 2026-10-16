@@ -193,6 +193,44 @@ agent_type_presets:
       none_of: ["faq"]
 
   # --------------------------------------------------------------------------
+  # External Database Q&A — read-only SQL over MySQL / PostgreSQL data sources
+  # that were synced into a KB. Modeled on Data Analysis: a fixed workflow of
+  # schema lookup, then one checked query. The table structure comes from the
+  # Wiki, so the KB must have Wiki enabled.
+  # --------------------------------------------------------------------------
+  - id: "external-db-qa"
+    i18n:
+      default:
+        label: "External Database Q&A"
+        description: "Answer questions with read-only SQL over MySQL / PostgreSQL data sources synced into the KB. Requires a Wiki-enabled KB."
+      zh-CN:
+        label: "外部数据库问数"
+        description: "对已同步到知识库的 MySQL / PostgreSQL 数据源执行只读 SQL 并回答问题。需要绑定已启用 Wiki 的知识库。"
+      zh-TW:
+        label: "外部資料庫問數"
+        description: "對已同步到知識庫的 MySQL / PostgreSQL 資料來源執行唯讀 SQL 並回答問題。需要綁定已啟用 Wiki 的知識庫。"
+      ja-JP:
+        label: "外部データベース問い合わせ"
+        description: "ナレッジベースに同期された MySQL / PostgreSQL データソースに対して読み取り専用 SQL で回答します。Wiki を有効にしたナレッジベースが必要です。"
+    config:
+      system_prompt_id: "external_db_analyst"
+      temperature: 0.3
+      max_iterations: 30
+      # The table structure comes from the Wiki; the query runs through
+      # external_db_query. Retrieval over chunks is not needed.
+      allowed_tools:
+        - "wiki_search"
+        - "wiki_read_page"
+        - "external_db_query"
+      retain_retrieval_history: false
+      web_search_enabled: false
+      kb_selection_mode: "all"
+    # Business rule: the table map lives in the Wiki, so the KB must expose it.
+    # Tool-derived any_of is merged with this explicit all_of.
+    kb_filter:
+      all_of: ["wiki"]
+
+  # --------------------------------------------------------------------------
   # Custom — no preset; user configures everything by hand.
   # --------------------------------------------------------------------------
   - id: "custom"

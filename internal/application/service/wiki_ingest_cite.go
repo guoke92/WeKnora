@@ -62,6 +62,39 @@ type citationPipelineOutcome struct {
 	NewSlugCount   int
 }
 
+const (
+	// kbCatalogPerTypeLimit bounds how many existing entity pages and concept
+	// pages are shown to pass 0. Most-recently-updated pages come first.
+	kbCatalogPerTypeLimit = 200
+	// kbCatalogSummaryRunes keeps each catalog line short; the slug and title
+	// are what the model needs to reuse an identity.
+	kbCatalogSummaryRunes = 120
+)
+
+// kbPageCatalogText lists the knowledge base's existing entity and concept
+// pages as "slug | title | summary" lines. Pass 0 sees pages created by other
+// documents too, so an entity that a previous document already turned into a
+// page is reused under the same slug instead of getting a second page.
+// Returns "" when the knowledge base has no such pages.
+func (s *wikiIngestService) kbPageCatalogText(ctx context.Context, kbID string) string {
+	if s.wikiService == nil {
+		return ""
+	}
+	var sb strings.Builder
+	for _, pageType := range []string{types.WikiPageTypeEntity, types.WikiPageTypeConcept} {
+		entries, err := s.wikiService.ListByTypeRecent(ctx, kbID, pageType, kbCatalogPerTypeLimit)
+		if err != nil {
+			logger.Warnf(ctx, "wiki ingest: ListByTypeRecent(%s) for pass 0 catalog failed: %v", pageType, err)
+			continue
+		}
+		for _, e := range entries {
+			summary := truncateString(strings.Join(strings.Fields(e.Summary), " "), kbCatalogSummaryRunes)
+			fmt.Fprintf(&sb, "- %s | %s | %s\n", e.Slug, e.Title, summary)
+		}
+	}
+	return sb.String()
+}
+
 // extractCandidateSlugs runs Pass 0 of the chunk-cited pipeline: it scans the
 // full (reconstructed) document text and returns a lightweight skeleton of
 // every significant entity/concept. Unlike the legacy single-shot extraction,
@@ -93,11 +126,17 @@ func (s *wikiIngestService) extractCandidateSlugs(
 		prevSlugsText = "(none — this is a new document)"
 	}
 
+	existingPagesText := s.kbPageCatalogText(ctx, kbID)
+	if existingPagesText == "" {
+		existingPagesText = "(none — this knowledge base has no entity or concept pages yet)"
+	}
+
 	granularity := batchCtx.ExtractionGranularity.Normalize()
 	raw, err := s.generateWithTemplate(ctx, chatModel, agent.WikiCandidateSlugPrompt, map[string]string{
 		"Content":             content,
 		"Language":            lang,
 		"PreviousSlugs":       prevSlugsText,
+		"ExistingWikiPages":   existingPagesText,
 		"Granularity":         string(granularity),
 		"GranularityGuidance": agent.WikiGranularityGuidance(string(granularity)),
 		"CustomInstructions":  batchCtx.ExtractionInstructions,

@@ -279,6 +279,30 @@ function seafileWithin(id: string, parent: string): boolean {
     (parentPath === '/' || path === parentPath || path.startsWith(parentPath + '/'))
 }
 
+// MySQL / PostgreSQL: user and password are credentials; host, port, database and
+// the profiling knobs are non-secret settings edited in their own section.
+const SQL_CONNECTOR_TYPES = ['mysql', 'postgres']
+const isSQLConnector = (type: string) => SQL_CONNECTOR_TYPES.includes(type)
+function sqlDefaultSettings(type: string): Record<string, any> {
+  return {
+    host: '',
+    port: type === 'postgres' ? 5432 : 3306,
+    database: '',
+    tls_mode: 'require',
+    profile_enabled: true,
+    profile_values: true,
+    topk: 10,
+    profile_sample_rows: 10000,
+    max_tables: 200,
+    masked_columns: '',
+  }
+}
+// Keeps values already saved on the data source and fills the rest with defaults,
+// so the form always shows the effective configuration.
+function withSQLDefaults(type: string, settings?: Record<string, any>): Record<string, any> {
+  return { ...sqlDefaultSettings(type), ...(settings || {}) }
+}
+
 interface GitLabProjectInput { project_id: string; ref: string; pathsText: string }
 const gitlabProjects = ref<GitLabProjectInput[]>([])
 function syncGitLabProjectsToSettings() {
@@ -761,6 +785,20 @@ const connectorDefs = computed<ConnectorDef[]>(() => [
       { key: 'api_token', labelKey: 'datasource.seafile.apiToken', placeholder: '', secret: true, hintKey: 'datasource.seafile.apiTokenHint' },
     ],
   },
+  {
+    type: 'mysql', available: true, docUrl: '', permissionDocUrl: '', permissionPageUrl: '', requiredPermissions: [],
+    fields: [
+      { key: 'user', labelKey: 'datasource.sql.user', placeholder: 'readonly_user', hintKey: 'datasource.sql.connectionHint' },
+      { key: 'password', labelKey: 'datasource.sql.password', placeholder: '', secret: true, optional: true },
+    ],
+  },
+  {
+    type: 'postgres', available: true, docUrl: '', permissionDocUrl: '', permissionPageUrl: '', requiredPermissions: [],
+    fields: [
+      { key: 'user', labelKey: 'datasource.sql.user', placeholder: 'readonly_user', hintKey: 'datasource.sql.connectionHint' },
+      { key: 'password', labelKey: 'datasource.sql.password', placeholder: '', secret: true, optional: true },
+    ],
+  },
 ])
 
 
@@ -825,7 +863,9 @@ watch(visible, async (v) => {
         resource_ids: editConfig.resource_ids || [],
         settings: props.dataSource.type === 'rss'
           ? hydrateRssFeedUrlsFromConfig(editConfig)
-          : (editConfig.settings || {}),
+          : isSQLConnector(props.dataSource.type)
+            ? withSQLDefaults(props.dataSource.type, editConfig.settings)
+            : (editConfig.settings || {}),
       },
       sync_schedule: props.dataSource.sync_schedule,
       sync_mode: props.dataSource.sync_mode,
@@ -909,6 +949,9 @@ function selectType(def: ConnectorDef) {
   if (def.type === 'confluence') {
     form.value.config.settings = { ...form.value.config.settings, edition: 'server' }
   }
+  if (isSQLConnector(def.type)) {
+    form.value.config.settings = withSQLDefaults(def.type)
+  }
   // A new Yuque source opts into the book's folder hierarchy. Only on create:
   // an existing source keeps what it was built with, so the "folder layout is
   // owned by the connector" caveat never applies to sources that predate it.
@@ -925,6 +968,7 @@ async function testConnection() {
   syncRssAuthHeadersToCredentials()
   syncConfluencePublicFieldsToSettings()
   if (!validateRssFeedUrls()) return
+  if (!validateSQLSettings()) return
   if (!isEdit.value || !credentialsConfigured.value || replaceCredentialsMode.value) {
     const fields = displayedCredentialFields.value
     for (const f of fields) {
@@ -955,7 +999,10 @@ async function testConnection() {
         // validate-credentials is credentials-only; feed URLs live in settings.
         creds.feed_urls = form.value.config.settings.feed_urls
       }
-      await validateCredentials(form.value.type, creds)
+      // SQL connectors need host/database (settings) to connect; the stateless
+      // validator receives them alongside the credentials.
+      const settings = isSQLConnector(form.value.type) ? { ...form.value.config.settings } : undefined
+      await validateCredentials(form.value.type, creds, settings)
     }
     testResult.value = 'success'
     MessagePlugin.success(t('datasource.testSuccess'))
@@ -980,6 +1027,9 @@ async function loadResources() {
       } as any)
       const created = res?.data || res
       tempDsId.value = created.id
+      if (created.notice === 'wiki_disabled') {
+        MessagePlugin.warning(t('datasource.sql.wikiDisabledNotice'))
+      }
     } else if (!isEdit.value) {
       await updateDataSource(tempDsId.value, {
         ...form.value,
@@ -1131,9 +1181,22 @@ function validateRssFeedUrls(): boolean {
   return true
 }
 
+function validateSQLSettings(): boolean {
+  if (!isSQLConnector(form.value.type)) return true
+  const settings = form.value.config.settings || {}
+  for (const key of ['host', 'database']) {
+    if (!String(settings[key] || '').trim()) {
+      MessagePlugin.warning(`${t(`datasource.sql.${key}`)} ${t('datasource.isRequired')}`)
+      return false
+    }
+  }
+  return true
+}
+
 function validateStep1Fields(): boolean {
   syncRssAuthHeadersToCredentials()
   if (!validateRssFeedUrls()) return false
+  if (!validateSQLSettings()) return false
   if (isEdit.value && credentialsConfigured.value && !replaceCredentialsMode.value) {
     return true
   }
@@ -1176,6 +1239,10 @@ async function nextStep() {
   // Seafile has no "whole account" scope: the backend rejects an empty selection.
   if (step.value === 2 && isSeafileConnector(form.value.type) && selectedResourceIds.value.length === 0) {
     MessagePlugin.warning(t('datasource.seafile.selectionRequired'))
+    return
+  }
+  if (step.value === 2 && isSQLConnector(form.value.type) && selectedResourceIds.value.length === 0) {
+    MessagePlugin.warning(t('datasource.sql.selectionRequired'))
     return
   }
   step.value++
@@ -1737,6 +1804,66 @@ const drawerConfirmText = computed(() => {
             </t-button>
           </div>
         </template>
+      </section>
+    </template>
+
+    <!-- Step 1 (SQL only): where the database is and how its tables are profiled. -->
+    <template v-if="step === 1 && isSQLConnector(form.type)">
+      <section class="setting-drawer__section">
+        <div class="form-item">
+          <label class="form-label required">{{ t('datasource.sql.host') }}</label>
+          <t-input v-model="form.config.settings.host" placeholder="db.example.com" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="form-item">
+          <label class="form-label">{{ t('datasource.sql.port') }}</label>
+          <t-input-number v-model="form.config.settings.port" :min="1" :max="65535" theme="normal" />
+        </div>
+        <div class="form-item">
+          <label class="form-label required">{{ t('datasource.sql.database') }}</label>
+          <t-input v-model="form.config.settings.database" placeholder="shop" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="form-item">
+          <label class="form-label">{{ t('datasource.sql.tlsMode') }}</label>
+          <t-select v-model="form.config.settings.tls_mode">
+            <t-option value="disable" :label="t('datasource.sql.tlsDisable')" />
+            <t-option value="require" :label="t('datasource.sql.tlsRequire')" />
+            <t-option value="verify-full" :label="t('datasource.sql.tlsVerifyFull')" />
+          </t-select>
+        </div>
+      </section>
+
+      <section class="setting-drawer__section">
+        <h4 class="setting-drawer__section-title">{{ t('datasource.sql.profileSection') }}</h4>
+        <div class="form-item form-item--flat">
+          <t-checkbox v-model="form.config.settings.profile_enabled">{{ t('datasource.sql.profileEnabled') }}</t-checkbox>
+        </div>
+        <div class="form-item form-item--flat">
+          <t-checkbox v-model="form.config.settings.profile_values" :disabled="!form.config.settings.profile_enabled">
+            {{ t('datasource.sql.profileValues') }}
+          </t-checkbox>
+        </div>
+        <div class="form-item">
+          <label class="form-label">{{ t('datasource.sql.topK') }}</label>
+          <t-input-number v-model="form.config.settings.topk" :min="1" :max="50" theme="normal" />
+        </div>
+        <div class="form-item">
+          <label class="form-label">{{ t('datasource.sql.sampleRows') }}</label>
+          <t-input-number v-model="form.config.settings.profile_sample_rows" :min="100" :max="100000" theme="normal" />
+        </div>
+        <div class="form-item">
+          <label class="form-label">{{ t('datasource.sql.maxTables') }}</label>
+          <t-input-number v-model="form.config.settings.max_tables" :min="1" :max="5000" theme="normal" />
+        </div>
+        <div class="form-item">
+          <label class="form-label">{{ t('datasource.sql.maskedColumns') }}</label>
+          <t-textarea
+            v-model="form.config.settings.masked_columns"
+            :autosize="{ minRows: 1, maxRows: 4 }"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <p class="form-desc">{{ t('datasource.sql.maskedColumnsHint') }}</p>
+        </div>
       </section>
     </template>
 

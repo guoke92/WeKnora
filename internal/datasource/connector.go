@@ -318,6 +318,22 @@ var ConnectorMetadataRegistry = map[string]ConnectorMetadata{
 		AuthType:     "token",
 		Capabilities: []string{"incremental", "hierarchical", "deletion_sync"},
 	},
+	types.ConnectorTypeMySQL: {
+		Type:         types.ConnectorTypeMySQL,
+		Name:         "MySQL",
+		Description:  "Extract schema, column profiles and relations from MySQL tables (read-only)",
+		Priority:     14,
+		AuthType:     "password",
+		Capabilities: []string{"incremental", "hierarchical", "deletion_sync"},
+	},
+	types.ConnectorTypePostgres: {
+		Type:         types.ConnectorTypePostgres,
+		Name:         "PostgreSQL",
+		Description:  "Extract schema, column profiles and relations from PostgreSQL tables (read-only)",
+		Priority:     15,
+		AuthType:     "password",
+		Capabilities: []string{"incremental", "hierarchical", "deletion_sync"},
+	},
 }
 
 // ListAvailableConnectors returns all available connector metadata

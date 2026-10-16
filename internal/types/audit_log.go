@@ -174,6 +174,7 @@ const (
 	AuditActionDataSourceDeleted       AuditAction = "datasource.deleted"
 	AuditActionDataSourceSyncStarted   AuditAction = "datasource.sync_started"
 	AuditActionDataSourceSyncCompleted AuditAction = "datasource.sync_completed"
+	AuditActionDataSourceQueried       AuditAction = "datasource.queried"
 	AuditActionDataSourceSyncFailed    AuditAction = "datasource.sync_failed"
 	AuditActionDataSourcePaused        AuditAction = "datasource.paused"
 	AuditActionDataSourceResumed       AuditAction = "datasource.resumed"

@@ -131,6 +131,7 @@ Each concept should have:
 - "details": A 2-5 sentence explanation in {{.Language}} as discussed in the document. **Image rule**: If the document contains relevant <image> elements in an <images> tag, include them in the details using Markdown syntax: ![caption](url). The URL inside ![caption](url) is an opaque token; reproduce it EXACTLY and VERBATIM, do not alter, shorten, or normalize it.
 
 Only include concepts that are substantively discussed. Skip trivial or overly generic concepts.
+Concepts must be business knowledge of this knowledge base's domain. Do NOT create concepts for generic technology or database terms (for example optimistic locking, multi-tenancy, indexing), data-analysis or profiling methods (for example column profiling, TopK), or the document's own structure (for example data quality hints, statistics notes). Describe such properties in the details of the entity they belong to.
 
 ### Deduplication Rules
 - If something is a specific named thing (person, company, product, place), put it ONLY in "entities".
@@ -181,6 +182,10 @@ const WikiCandidateSlugPrompt = `You are a knowledge extraction system. Analyze 
 {{.PreviousSlugs}}
 </previous_slugs>
 
+<existing_wiki_pages>
+{{.ExistingWikiPages}}
+</existing_wiki_pages>
+
 <instructions>
 Return a JSON object with two arrays: "entities" and "concepts".
 **IMPORTANT: Write ALL names, descriptions, and details in {{.Language}}**.
@@ -196,6 +201,21 @@ If previous slugs are provided above, you MUST follow these rules:
 - If an entity or concept no longer appears in the document, **do NOT include it** in the output.
 - Only generate new slugs for entities/concepts that are genuinely new (not present in the previous list).
 - This ensures slug stability across document updates.
+
+### Existing Wiki Pages (knowledge base-wide)
+<existing_wiki_pages> lists the entity and concept pages that already exist in this knowledge base, created from other documents, as "slug | title | summary". Before you create a new slug, check this list:
+- If an entity or concept in the document is the SAME real-world thing as a listed page, **reuse that page's exact slug**, and use the listed title as its name. Do NOT create a second slug for the same thing, even when this document names it differently (for example, a database table that stores a business object is the same object as the page about that object).
+- Only create a new slug when no listed page refers to the same thing. Sharing a broad topic or a word is not a match.
+- Listed pages are a reference for identity only. Do NOT extract an item just because it is listed; the current document must discuss it.
+
+### Concept Scope (business knowledge only)
+Concepts are kept only when they are business knowledge of this knowledge base's domain: a business term, business rule, process, metric, or topic the document discusses in business terms.
+- Do NOT create concepts for generic technology, software-engineering, or database terms (for example optimistic locking, multi-tenancy, indexing, primary key, soft delete). They are not specific to this business and only add noise to retrieval.
+- Do NOT create concepts for data-analysis or profiling methods and the document's own structure (for example column profiling, data profiling, TopK, constant column, data quality hints, statistics notes, section headings). Describe such properties in the details of the entity they belong to.
+
+### Labelling General Knowledge
+- Every description and detail must be grounded in the document. If you add background knowledge that the document does not state (for example a standard definition of a well-known term), prefix that sentence with 【通用知识】, e.g. "【通用知识】统一社会信用代码是我国企业的法定身份识别代码。"
+- Never present 【通用知识】 as a fact from the document, and never mix it into a sentence that the document supports.
 
 ### Entities (people, organizations, products, places, technologies, events, etc.)
 Each entity should have:
@@ -322,8 +342,8 @@ const WikiPageModifySystemPrompt = `You are a wiki editor tasked with updating a
 
 ### SOURCE GROUNDING & MERGE RULES (CRITICAL):
 1. **No Inline Chunk IDs:** Chunk handles such as [c003] are internal processing metadata. NEVER output them in the page body or summary, and remove any legacy inline chunk handles from existing content while editing. Source associations are stored separately by the system.
-2. **Mandatory Grounding:** Every newly added factual claim, entity, or numerical value MUST be directly supported by the provided new source chunks, but the final prose must remain clean Markdown without inline chunk IDs.
-3. **No Hallucination:** Do not invent, synthesize, or infer any information that is not explicitly present in the provided source chunks. If the new chunks clearly and directly supersede or contradict existing content, update the main text to reflect the newer supported information AND add a brief "Contradictions / Updates" section summarizing the change. If the conflict is ambiguous, unresolved, or not directly supported by the provided chunks, do not overwrite the existing content; instead, add only a "Contradictions / Updates" section describing the conflict.
+2. **Mandatory Grounding:** Every newly added factual claim, entity, or numerical value MUST be directly supported by the provided new source chunks, unless it is general background knowledge labelled 【通用知识】 under rule 3, but the final prose must remain clean Markdown without inline chunk IDs.
+3. **No Hallucination:** Do not invent, synthesize, or infer any information that is not explicitly present in the provided source chunks. The only exception is general background knowledge (a standard definition or a well-known public fact that the sources do not state). Such a sentence MUST start with 【通用知识】, must be a separate sentence, must never be merged into a sourced claim, and must never replace or contradict a sourced statement. If the new chunks clearly and directly supersede or contradict existing content, update the main text to reflect the newer supported information AND add a brief "Contradictions / Updates" section summarizing the change. If the conflict is ambiguous, unresolved, or not directly supported by the provided chunks, do not overwrite the existing content; instead, add only a "Contradictions / Updates" section describing the conflict.
 4. The shared source-context block describes what each source document is about and what kind of document it is. Use it only to calibrate scope, attribution, and tone. Never copy source-context wording into the page as factual evidence.
 5. Stable system-owned output, grounding, safety, and factuality rules override any business instructions.
 

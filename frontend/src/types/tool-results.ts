@@ -18,6 +18,7 @@ export type DisplayType =
     | 'thinking'
     | 'plan'
     | 'database_query'
+    | 'external_db_query'
     | 'web_search_results'
     | 'web_fetch_results'
     | 'grep_results'
@@ -188,6 +189,18 @@ export interface DatabaseQueryData {
     columns: string[];
     rows: Array<Record<string, any>>;
     row_count: number;
+}
+
+// Rows of a read-only query against an external MySQL / PostgreSQL data source.
+// Values are already rendered as text; NULL arrives as the string "NULL".
+export interface ExternalDBQueryData {
+    display_type: 'external_db_query';
+    datasource_id: string;
+    columns: string[];
+    rows: string[][];
+    row_count: number;
+    truncated: boolean;
+    duration_ms: number;
 }
 
 // Web search result item
@@ -479,6 +492,7 @@ export type ToolResultData =
     | ThinkingData
     | PlanData
     | DatabaseQueryData
+    | ExternalDBQueryData
     | WebSearchResultsData
     | WebFetchResultsData
     | GrepResultsData

@@ -64,6 +64,7 @@ export const TOOL_CAPABILITY_REQUIREMENTS: Record<string, ToolRequirement> = {
   read_document:         { anyOf: ['vector', 'keyword', 'wiki'], consumesFiles: true, auxiliary: true },
   list_documents:        { anyOf: ['vector', 'keyword', 'wiki'], consumesFiles: true, auxiliary: true },
   database_query:        { anyOf: ['vector', 'keyword'], consumesFiles: true },
+  external_db_query:     { anyOf: ['vector', 'keyword'] },
   // Retired names kept so stale agent configs / stored history still resolve.
   // The editor normalizes them to the new names on load (see
   // `@/utils/legacy-tool-names`).

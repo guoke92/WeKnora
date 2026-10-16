@@ -4189,6 +4189,7 @@ export default {
     lengthThousands: '{value}k characters',
     lengthTenThousands: '{value} ten-thousand characters',
     noDatabaseRecords: 'No matching records found',
+    externalQueryTruncated: 'The result hit the row or size limit; only the first rows are shown',
     nullValuePlaceholder: '<NULL>',
     chunkCountValue: '{count} chunks',
     documentDescriptionLabel: 'Description:',
@@ -6352,7 +6353,8 @@ export default {
       shellExec: 'Run sandbox command',
       dataAnalysis: 'Data Analysis',
       dataSchema: 'Data Schema',
-      databaseQuery: 'Database Query'
+      databaseQuery: 'Database Query',
+      externalDbQuery: 'External Database Query'
     },
     skillFiles: {
       heading: 'Skill files',
@@ -6649,6 +6651,8 @@ export default {
       getDocInfoDesc: 'View document metadata',
       dbQuery: 'Query Database',
       dbQueryDesc: 'Query information from the database',
+      externalDbQuery: 'Query External Database',
+      externalDbQueryDesc: 'Run read-only queries against synced MySQL / PostgreSQL data sources',
       dataAnalysis: 'Data Analysis',
       dataAnalysisDesc: 'Understand data files and perform data analysis',
       dataSchema: 'View Data Schema',
@@ -6816,6 +6820,7 @@ export default {
         wikiQa: 'Wiki not enabled',
         hybridRagWiki: 'No retrieval surface enabled',
         dataAnalysis: 'Requires RAG (FAQ not supported)',
+        externalDbQa: 'Wiki not enabled',
         quickAnswer: 'Quick Answer mode requires RAG retrieval',
         generic: 'Not compatible with current type'
       },
@@ -6992,6 +6997,29 @@ export default {
       paths: 'Directories', pathsPlaceholder: 'One directory per line; leave empty to sync the whole project',
       addProject: 'Add project', projectRequired: 'Add at least one GitLab project',
     },
+    sql: {
+      selectionRequired: 'Select at least one schema or table',
+      wikiDisabledNotice: 'Wiki is disabled for this knowledge base: table documents are indexed for search, but table pages will not be compiled. Enable wiki in the knowledge base settings to get them.',
+      user: 'Username',
+      password: 'Password',
+      host: 'Host',
+      port: 'Port',
+      database: 'Database',
+      tlsMode: 'TLS mode',
+      tlsDisable: 'Disabled',
+      tlsRequire: 'Require TLS (certificate not verified)',
+      tlsVerifyFull: 'Require TLS and verify the certificate',
+      connectionHint: 'Use a dedicated read-only account. Queries run inside read-only transactions, but least privilege is still recommended.',
+      selectionHint: 'Select whole schemas or individual tables. A selected schema includes all of its tables.',
+      profileSection: 'Column profiling',
+      profileEnabled: 'Profile columns from a sample of rows',
+      profileValues: 'Include value features (ranges, TopK). Values of sensitive columns are never shown.',
+      topK: 'TopK values per column',
+      sampleRows: 'Sample rows per table',
+      maxTables: 'Maximum tables per sync',
+      maskedColumns: 'Additional sensitive columns',
+      maskedColumnsHint: 'Comma-separated column names whose values are never shown. Common names such as password, phone or email are masked automatically.'
+    },
     seafile: {
       baseUrl: 'Seafile URL', apiToken: 'API token',
       apiTokenHint: 'Generate it under "Settings → Web API token" in Seafile; the account only needs read access to the libraries you select, and the token is never sent with file downloads.',
@@ -7074,7 +7102,9 @@ export default {
       rss: 'RSS / Atom Feed',
       ima: 'Tencent IMA',
       gitlab: 'GitLab',
-      seafile: 'Seafile'
+      seafile: 'Seafile',
+      mysql: 'MySQL',
+      postgres: 'PostgreSQL'
     },
     connectorDesc: {
       feishu: 'Sync documents, spreadsheets and files from Feishu Wiki',
@@ -7088,7 +7118,9 @@ export default {
       rss: 'Sync articles from RSS / Atom feeds',
       ima: 'Sync documents, notes and files from Tencent IMA knowledge bases (AI sessions and video parses are not supported)',
       gitlab: 'Sync files from GitLab projects',
-      seafile: 'Sync folders and files from Seafile libraries'
+      seafile: 'Sync folders and files from Seafile libraries',
+      mysql: 'Extract schema, column profiles and relations from MySQL tables (read-only)',
+      postgres: 'Extract schema, column profiles and relations from PostgreSQL tables (read-only)'
     },
     drive: {
       folderTokenLabel: 'Drive folder token',
@@ -7237,7 +7269,9 @@ export default {
       seafile_source_changed: 'The Seafile file changed while it was being fetched; the next sync retries it.',
       seafile_invalid_response: 'Seafile returned a response that could not be parsed; check the server version and reverse proxy.',
       seafile_ssrf_blocked: 'The Seafile download URL was blocked by the SSRF policy; add the fileserver host to SSRF_WHITELIST.',
-      seafile_fetch_failed: 'Failed to fetch the file from Seafile; the next sync retries it.'
+      seafile_fetch_failed: 'Failed to fetch the file from Seafile; the next sync retries it.',
+      describe_failed: 'Failed to read the table structure; see server logs. The next sync retries it.',
+      max_tables_exceeded: 'Some tables were skipped because the per-sync table limit was reached; raise max_tables or narrow the selection.'
     }
   },
   integrations: {

@@ -992,6 +992,29 @@ export default {
       paths: '디렉터리', pathsPlaceholder: '한 줄에 하나씩 입력하세요. 비워 두면 전체 프로젝트를 동기화합니다',
       addProject: '프로젝트 추가', projectRequired: 'GitLab 프로젝트를 하나 이상 추가하세요',
     },
+    sql: {
+      selectionRequired: '스키마 또는 테이블을 하나 이상 선택하세요',
+      wikiDisabledNotice: '이 지식 베이스는 위키가 꺼져 있습니다. 테이블 문서는 검색용으로만 색인되며 테이블 페이지는 생성되지 않습니다. 지식 베이스 설정에서 위키를 켜면 생성됩니다.',
+      user: '사용자 이름',
+      password: '비밀번호',
+      host: '호스트',
+      port: '포트',
+      database: '데이터베이스',
+      tlsMode: 'TLS 모드',
+      tlsDisable: '사용 안 함',
+      tlsRequire: 'TLS 사용(인증서 검증 안 함)',
+      tlsVerifyFull: 'TLS 사용 및 인증서 검증',
+      connectionHint: '전용 읽기 전용 계정 사용을 권장합니다. 쿼리는 읽기 전용 트랜잭션에서 실행되지만 최소 권한 원칙을 따르세요.',
+      selectionHint: '스키마 전체 또는 개별 테이블을 선택할 수 있습니다. 스키마를 선택하면 하위의 모든 테이블이 포함됩니다.',
+      profileSection: '컬럼 프로파일',
+      profileEnabled: '행 샘플로 컬럼 프로파일 수집',
+      profileValues: '값 특징(범위, TopK)을 포함합니다. 민감 컬럼의 값은 표시되지 않습니다.',
+      topK: '컬럼당 TopK 값 수',
+      sampleRows: '테이블당 샘플 행 수',
+      maxTables: '동기화당 최대 테이블 수',
+      maskedColumns: '추가 민감 컬럼',
+      maskedColumnsHint: '쉼표로 구분한 컬럼 이름이며 값은 표시되지 않습니다. password, phone, email 등 일반적인 민감 컬럼은 자동으로 마스킹됩니다.'
+    },
     seafile: {
       baseUrl: 'Seafile URL', apiToken: 'API 토큰',
       apiTokenHint: 'Seafile의 \'설정 → Web API 토큰\'에서 생성하세요. 계정에 선택한 라이브러리의 읽기 권한만 있으면 되며 토큰은 파일 다운로드 요청에 전송되지 않습니다.',
@@ -1160,7 +1183,9 @@ export default {
       ima: 'Tencent IMA 지식베이스에서 문서, 노트 및 파일 동기화 (AI 세션과 동영상 분석은 지원되지 않음)',
       rss: 'RSS / Atom 피드에서 글 동기화',
       gitlab: 'GitLab 프로젝트의 파일 동기화',
-      seafile: 'Seafile 라이브러리의 폴더와 파일 동기화'
+      seafile: 'Seafile 라이브러리의 폴더와 파일 동기화',
+      mysql: 'MySQL 테이블에서 스키마, 컬럼 프로파일, 관계를 추출합니다(읽기 전용)',
+      postgres: 'PostgreSQL 테이블에서 스키마, 컬럼 프로파일, 관계를 추출합니다(읽기 전용)'
     },
     connector: {
       feishu: '페이슈 (Feishu)',
@@ -1174,7 +1199,9 @@ export default {
       ima: 'Tencent IMA',
       rss: 'RSS / Atom 피드',
       gitlab: 'GitLab',
-      seafile: 'Seafile'
+      seafile: 'Seafile',
+      mysql: 'MySQL',
+      postgres: 'PostgreSQL'
     },
     logDetail: {
       startTime: '시작 시간',
@@ -1246,7 +1273,9 @@ export default {
       seafile_source_changed: '가져오는 동안 Seafile 파일이 변경되었습니다. 다음 동기화에서 다시 시도합니다.',
       seafile_invalid_response: 'Seafile이 해석할 수 없는 응답을 반환했습니다. 서버 버전과 리버스 프록시 설정을 확인하세요.',
       seafile_ssrf_blocked: 'Seafile 다운로드 URL이 SSRF 정책에 의해 차단되었습니다. fileserver 호스트를 SSRF_WHITELIST에 추가하세요.',
-      seafile_fetch_failed: 'Seafile에서 파일을 가져오지 못했습니다. 다음 동기화에서 다시 시도합니다.'
+      seafile_fetch_failed: 'Seafile에서 파일을 가져오지 못했습니다. 다음 동기화에서 다시 시도합니다.',
+      describe_failed: '테이블 구조를 읽지 못했습니다. 서버 로그를 확인하세요. 다음 동기화에서 다시 시도합니다.',
+      max_tables_exceeded: '동기화당 테이블 수 한도에 도달해 일부 테이블을 건너뛰었습니다. 한도를 늘리거나 선택 범위를 줄이세요.'
     },
   },
   ollama: {
@@ -1382,6 +1411,7 @@ export default {
         wikiQa: 'Wiki 비활성화',
         hybridRagWiki: '활성화된 검색 수단 없음',
         dataAnalysis: 'RAG 필요 (FAQ 미지원)',
+        externalDbQa: 'Wiki가 활성화되지 않음',
         quickAnswer: '빠른 답변 모드는 RAG 검색이 필요합니다',
         generic: '현재 유형과 호환 안 됨'
       }
@@ -1517,6 +1547,8 @@ export default {
       getDocInfoDesc: '문서 메타데이터 보기',
       dbQuery: '데이터베이스 쿼리',
       dbQueryDesc: '데이터베이스에서 정보 조회',
+      externalDbQuery: '외부 데이터베이스 쿼리',
+      externalDbQueryDesc: '동기화된 MySQL / PostgreSQL 데이터 소스에 읽기 전용 쿼리 실행',
       dataAnalysis: '데이터 분석',
       dataAnalysisDesc: '데이터 파일을 이해하고 데이터 분석 수행',
       dataSchema: '데이터 스키마 보기',
@@ -1828,7 +1860,8 @@ export default {
       shellExec: '샌드박스 명령 실행',
       dataAnalysis: '데이터 분석',
       dataSchema: '데이터 구조',
-      databaseQuery: '데이터베이스 조회'
+      databaseQuery: '데이터베이스 조회',
+      externalDbQuery: '외부 데이터베이스 조회'
     },
     skillFiles: {
       heading: '스킬 파일',
@@ -4119,6 +4152,7 @@ export default {
     lengthThousands: '{value}천 자',
     lengthTenThousands: '{value}만 자',
     noDatabaseRecords: '일치하는 레코드를 찾을 수 없습니다',
+    externalQueryTruncated: '결과가 행 수 또는 크기 한도에 도달해 앞쪽 행만 표시합니다',
     nullValuePlaceholder: '<NULL>',
     chunkCountValue: '{count}개 청크',
     documentDescriptionLabel: '문서 설명:',

@@ -39,6 +39,12 @@ const (
 	ConnectorTypeGitLab      = "gitlab"
 	ConnectorTypeIMA         = "ima"
 	ConnectorTypeSeafile     = "seafile"
+	// ConnectorTypeMySQL / ConnectorTypePostgres extract schema structure,
+	// column profiles and (later) implicit relations from an external
+	// relational database. Read-only by construction; see
+	// internal/datasource/connector/sqldb.
+	ConnectorTypeMySQL    = "mysql"
+	ConnectorTypePostgres = "postgres"
 
 	// Sync modes
 	SyncModeIncremental = "incremental"
@@ -127,7 +133,16 @@ type DataSource struct {
 
 	// Latest sync log (not stored in DB, populated on query)
 	LatestSyncLog *SyncLog `json:"latest_sync_log" gorm:"-"`
+
+	// Notice is a non-blocking, machine-readable hint returned on create (not stored).
+	// Known values: DataSourceNoticeWikiDisabled.
+	Notice string `json:"notice,omitempty" gorm:"-"`
 }
+
+// DataSourceNoticeWikiDisabled is set on create when an external database source targets a
+// knowledge base without wiki: its table documents are indexed for retrieval but no table
+// pages are compiled. The client shows it as a hint; creation is not blocked.
+const DataSourceNoticeWikiDisabled = "wiki_disabled"
 
 // TableName specifies the table name for DataSource
 func (d *DataSource) TableName() string {

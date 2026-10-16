@@ -35,7 +35,7 @@ func formatGroundingGuidance(names []string) string {
 	for _, name := range []string{
 		tools.ToolSearchKnowledge, tools.ToolReadDocument, tools.ToolListDocuments,
 		tools.ToolWikiSearch, tools.ToolWikiReadPage, tools.ToolQueryKnowledgeGraph,
-		tools.ToolDataSchema, tools.ToolDataAnalysis, tools.ToolDatabaseQuery,
+		tools.ToolDataSchema, tools.ToolDataAnalysis, tools.ToolDatabaseQuery, tools.ToolExternalDBQuery,
 	} {
 		if slices.Contains(names, name) {
 			kbTools = append(kbTools, name)

@@ -984,6 +984,7 @@ var kbToolNames = map[string]bool{
 	agenttools.ToolReadDocument:        true,
 	agenttools.ToolListDocuments:       true,
 	agenttools.ToolQueryKnowledgeGraph: true,
+	agenttools.ToolExternalDBQuery:     true,
 	agenttools.ToolWikiSearch:          true,
 	agenttools.ToolWikiReadPage:        true,
 	// Retired names still appear in stored histories.

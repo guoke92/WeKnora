@@ -20,6 +20,8 @@ const (
 	BuiltinDeepResearcherID = "builtin-deep-researcher"
 	// BuiltinDataAnalystID is the ID for the built-in data analyst agent
 	BuiltinDataAnalystID = "builtin-data-analyst"
+	// BuiltinExternalDBQAID is the ID for the built-in external database Q&A agent
+	BuiltinExternalDBQAID = "builtin-external-db-qa"
 	// BuiltinKnowledgeGraphExpertID is the ID for the built-in knowledge graph expert agent
 	BuiltinKnowledgeGraphExpertID = "builtin-knowledge-graph-expert"
 	// BuiltinDocumentAssistantID is the ID for the built-in document assistant agent
@@ -57,6 +59,9 @@ const (
 	// uploaded into the KB. Retrieval semantics (vector/wiki/…) are largely
 	// irrelevant — this type is about data_schema + data_analysis tools.
 	AgentTypeDataAnalysis = "data-analysis"
+	// AgentTypeExternalDBQA answers questions with read-only SQL over MySQL / PostgreSQL
+	// data sources synced into a Wiki-enabled KB.
+	AgentTypeExternalDBQA = "external-db-qa"
 	// AgentTypeCustom is the "no preset" option; user-configured end to end.
 	AgentTypeCustom = "custom"
 )

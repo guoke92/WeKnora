@@ -38,6 +38,8 @@ const (
 	ChannelRSS              = "rss"               // RSS / Atom feed
 	ChannelIMA              = "ima"               // Tencent IMA (ima.qq.com)
 	ChannelSeafile          = "seafile"           // Seafile
+	ChannelMySQL            = "mysql"             // External MySQL database (schema/profile docs)
+	ChannelPostgres         = "postgres"          // External PostgreSQL database (schema/profile docs)
 )
 
 // Knowledge parse status constants

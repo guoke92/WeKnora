@@ -803,6 +803,7 @@ const TOOL_NAME_KEYS: Record<string, string> = {
   data_analysis: 'agentStream.tools.dataAnalysis',
   data_schema: 'agentStream.tools.dataSchema',
   database_query: 'agentStream.tools.databaseQuery',
+  external_db_query: 'agentStream.tools.externalDbQuery',
 };
 
 const getLocalizedToolName = (toolName?: string | null): string => {

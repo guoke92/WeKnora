@@ -68,6 +68,7 @@ var ToolCapabilityRequirements = map[string]ToolRequirement{
 	"list_documents":        documentReaderRequirement,
 	"query_knowledge_graph": {AllOf: []KBCapability{CapGraph}, ConsumesFiles: true},
 	"database_query":        {AnyOf: []KBCapability{CapVector, CapKeyword}, ConsumesFiles: true},
+	"external_db_query":     {AnyOf: []KBCapability{CapVector, CapKeyword}},
 	// Retired names keep their requirement so a stored allowlist that has not
 	// been normalized yet still derives the same KB filter.
 	"knowledge_search":      {AnyOf: []KBCapability{CapVector, CapKeyword}, ConsumesFiles: true},

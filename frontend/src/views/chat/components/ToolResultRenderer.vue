@@ -28,6 +28,9 @@
     <!-- Database Query Display -->
     <DatabaseQuery v-else-if="displayType === 'database_query'" :data="toolData as DatabaseQueryData" />
 
+    <!-- External Database Query Display -->
+    <ExternalDBQuery v-else-if="displayType === 'external_db_query'" :data="toolData as ExternalDBQueryData" />
+
     <!-- Web Search Results Display -->
     <WebSearchResults v-else-if="displayType === 'web_search_results'" :data="toolData as WebSearchResultsData" />
 
@@ -104,6 +107,7 @@ import type {
   ThinkingData,
   PlanData,
   DatabaseQueryData,
+  ExternalDBQueryData,
   WebSearchResultsData,
   WebFetchResultsData,
   GrepResultsData,
@@ -125,6 +129,7 @@ import GraphQueryResults from './tool-results/GraphQueryResults.vue';
 import ThinkingDisplay from './tool-results/ThinkingDisplay.vue';
 import PlanDisplay from './tool-results/PlanDisplay.vue';
 import DatabaseQuery from './tool-results/DatabaseQuery.vue';
+import ExternalDBQuery from './tool-results/ExternalDBQuery.vue';
 import WebSearchResults from './tool-results/WebSearchResults.vue';
 import WebFetchResults from './tool-results/WebFetchResults.vue';
 import GrepResults from './tool-results/GrepResults.vue';

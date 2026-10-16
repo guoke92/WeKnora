@@ -992,6 +992,29 @@ export default {
       paths: 'Каталоги', pathsPlaceholder: 'По одному каталогу в строке; оставьте пустым для синхронизации всего проекта',
       addProject: 'Добавить проект', projectRequired: 'Добавьте хотя бы один проект GitLab',
     },
+    sql: {
+      selectionRequired: 'Выберите хотя бы одну схему или таблицу',
+      wikiDisabledNotice: 'Вики в этой базе знаний отключена: документы таблиц индексируются только для поиска, страницы таблиц не создаются. Включите вики в настройках базы знаний, чтобы их получить.',
+      user: 'Имя пользователя',
+      password: 'Пароль',
+      host: 'Хост',
+      port: 'Порт',
+      database: 'База данных',
+      tlsMode: 'Режим TLS',
+      tlsDisable: 'Отключено',
+      tlsRequire: 'Требовать TLS (сертификат не проверяется)',
+      tlsVerifyFull: 'Требовать TLS и проверять сертификат',
+      connectionHint: 'Используйте отдельную учётную запись только для чтения. Запросы выполняются в транзакциях только для чтения, но соблюдайте принцип минимальных привилегий.',
+      selectionHint: 'Выбирайте целые схемы или отдельные таблицы. Выбранная схема включает все её таблицы.',
+      profileSection: 'Профиль столбцов',
+      profileEnabled: 'Профилировать столбцы по выборке строк',
+      profileValues: 'Учитывать признаки значений (диапазоны, TopK). Значения чувствительных столбцов не показываются.',
+      topK: 'Число значений TopK на столбец',
+      sampleRows: 'Строк в выборке на таблицу',
+      maxTables: 'Максимум таблиц за синхронизацию',
+      maskedColumns: 'Дополнительные чувствительные столбцы',
+      maskedColumnsHint: 'Имена столбцов через запятую; их значения никогда не показываются. Типичные имена (password, phone, email) маскируются автоматически.'
+    },
     seafile: {
       baseUrl: 'URL Seafile', apiToken: 'API-токен',
       apiTokenHint: 'Создайте его в Seafile: «Настройки → Web API токен». Учётной записи достаточно прав на чтение выбранных библиотек; токен не передаётся при скачивании файлов.',
@@ -1160,7 +1183,9 @@ export default {
       ima: 'Синхронизация документов, заметок и файлов из баз знаний Tencent IMA (ИИ-сессии и разбор видео не поддерживаются)',
       rss: 'Синхронизация статей из лент RSS / Atom',
       gitlab: 'Синхронизация файлов из проектов GitLab',
-      seafile: 'Синхронизация папок и файлов из библиотек Seafile'
+      seafile: 'Синхронизация папок и файлов из библиотек Seafile',
+      mysql: 'Извлечение схемы, профилей столбцов и связей из таблиц MySQL (только чтение)',
+      postgres: 'Извлечение схемы, профилей столбцов и связей из таблиц PostgreSQL (только чтение)'
     },
     connector: {
       feishu: 'Feishu (Фэйшу)',
@@ -1174,7 +1199,9 @@ export default {
       ima: 'Tencent IMA',
       rss: 'RSS / Atom лента',
       gitlab: 'GitLab',
-      seafile: 'Seafile'
+      seafile: 'Seafile',
+      mysql: 'MySQL',
+      postgres: 'PostgreSQL'
     },
     logDetail: {
       startTime: 'Время начала',
@@ -1246,7 +1273,9 @@ export default {
       seafile_source_changed: 'Файл Seafile изменился во время получения; при следующей синхронизации попытка повторится.',
       seafile_invalid_response: 'Seafile вернул ответ, который не удалось разобрать. Проверьте версию сервера и обратный прокси.',
       seafile_ssrf_blocked: 'URL скачивания Seafile заблокирован политикой SSRF. Добавьте хост fileserver в SSRF_WHITELIST.',
-      seafile_fetch_failed: 'Не удалось получить файл из Seafile; при следующей синхронизации попытка повторится.'
+      seafile_fetch_failed: 'Не удалось получить файл из Seafile; при следующей синхронизации попытка повторится.',
+      describe_failed: 'Не удалось прочитать структуру таблицы; подробности в журнале сервера. Повтор при следующей синхронизации.',
+      max_tables_exceeded: 'Часть таблиц пропущена: достигнут лимит таблиц за синхронизацию. Увеличьте max_tables или сузьте выбор.'
     },
   },
   ollama: {
@@ -1382,6 +1411,7 @@ export default {
         wikiQa: 'Wiki отключён',
         hybridRagWiki: 'Поиск не включён',
         dataAnalysis: 'Требуется RAG (не FAQ)',
+        externalDbQa: 'Wiki не включена',
         quickAnswer: 'Быстрый ответ требует RAG-поиск',
         generic: 'Несовместимо с типом'
       }
@@ -1517,6 +1547,8 @@ export default {
       getDocInfoDesc: 'Просмотр метаданных документа',
       dbQuery: 'Запрос к базе данных',
       dbQueryDesc: 'Запрос информации из базы данных',
+      externalDbQuery: 'Запрос к внешней базе данных',
+      externalDbQueryDesc: 'Запрос только для чтения к синхронизированным источникам MySQL / PostgreSQL',
       dataAnalysis: 'Анализ данных',
       dataAnalysisDesc: 'Понимание файлов данных и проведение анализа',
       dataSchema: 'Схема данных',
@@ -1828,7 +1860,8 @@ export default {
       shellExec: 'Выполнение команды в песочнице',
       dataAnalysis: 'Анализ данных',
       dataSchema: 'Структура данных',
-      databaseQuery: 'Запрос к базе данных'
+      databaseQuery: 'Запрос к базе данных',
+      externalDbQuery: 'Запрос к внешней базе данных'
     },
     skillFiles: {
       heading: 'Файлы навыка',
@@ -4119,6 +4152,7 @@ export default {
     lengthThousands: '{value} тыс. символов',
     lengthTenThousands: '{value} ×10⁴ символов',
     noDatabaseRecords: 'Совпадающих записей не найдено',
+    externalQueryTruncated: 'Результат достиг лимита строк или размера, показаны только первые строки',
     nullValuePlaceholder: '<NULL>',
     chunkCountValue: '{count} фрагментов',
     documentDescriptionLabel: 'Описание:',

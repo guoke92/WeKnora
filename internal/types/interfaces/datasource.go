@@ -39,9 +39,18 @@ type DataSourceService interface {
 	// ValidateConnection tests the connection to an external data source
 	ValidateConnection(ctx context.Context, dsID string) error
 
+	// RunExternalQuery runs one checked, read-only SQL statement against an external
+	// database data source and returns a bounded result. It backs the agent tool
+	// external_db_query; the caller is responsible for knowledge base scope.
+	RunExternalQuery(
+		ctx context.Context, dsID, sql string, limits types.ExternalQueryLimits,
+	) (*types.ExternalQueryResult, error)
+
 	// ValidateCredentials tests connectivity using raw credentials without persisting anything.
+	// settings carries the non-secret connection options some connectors need to connect
+	// (for example the host and database of a SQL source); it may be nil.
 	// This is used by the frontend "Test Connection" button before creating a data source.
-	ValidateCredentials(ctx context.Context, connectorType string, credentials map[string]interface{}) error
+	ValidateCredentials(ctx context.Context, connectorType string, credentials, settings map[string]interface{}) error
 
 	// ListAvailableResources lists resources available for sync in the external system.
 	// parentID enables lazy loading: "" lists the top level, a resource ExternalID lists its children.

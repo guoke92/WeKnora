@@ -52,6 +52,28 @@ Windows installers place them next to the installed executable.
   implementation; the upstream Go converter, `liuzl/da`, and GPL-licensed
   `cedar-go` code are not included.
 
+## SQL parsers for external database queries
+
+- Components: `github.com/pganalyze/pg_query_go/v6`, version `v6.2.2`, and
+  `github.com/pingcap/tidb/pkg/parser`, version
+  `v0.0.0-20261015072243-990bf7109040`.
+- Used by the backend to check read-only SELECT statements for PostgreSQL and
+  MySQL data sources (`external_db_query`). `pg_query_go` embeds `libpg_query`,
+  which contains code derived from the PostgreSQL project.
+- Licenses: `pg_query_go` is MIT, reproduced in
+  [`licenses/pg_query_go-MIT.txt`](licenses/pg_query_go-MIT.txt), with the
+  PostgreSQL License notice reproduced in
+  [`licenses/pg_query_go-PostgreSQL.txt`](licenses/pg_query_go-PostgreSQL.txt).
+  The TiDB parser is Apache-2.0, reproduced in
+  [`licenses/tidb-parser-Apache-2.0.txt`](licenses/tidb-parser-Apache-2.0.txt).
+- Modifications by WeKnora: none. WeKnora's checks are in separate files.
+- Corresponding source is available from the
+  [Go module proxy](https://proxy.golang.org/github.com/pganalyze/pg_query_go/v6/@v/v6.2.2.zip)
+  and [upstream repository](https://github.com/pganalyze/pg_query_go/tree/v6.2.2),
+  and from the
+  [Go module proxy](https://proxy.golang.org/github.com/pingcap/tidb/pkg/parser/@v/v0.0.0-20261015072243-990bf7109040.zip)
+  and [upstream repository](https://github.com/pingcap/tidb).
+
 ## Build-only component
 
 The Windows installer template in `cmd/desktop/build/windows/installer/project.nsi`

@@ -3,6 +3,8 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	"time"
 
 	"github.com/Tencent/WeKnora/internal/application/access"
+	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/datasource"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/tracing/langfuse"
@@ -35,6 +38,8 @@ type DataSourceService struct {
 	tenantRepo        interfaces.TenantRepository
 	tagService        interfaces.KnowledgeTagService
 	audit             interfaces.AuditLogService
+	modelService      interfaces.ModelService
+	cfg               *config.Config
 }
 
 // NewDataSourceService creates a new data source service
@@ -49,6 +54,8 @@ func NewDataSourceService(
 	tenantRepo interfaces.TenantRepository,
 	tagService interfaces.KnowledgeTagService,
 	audit interfaces.AuditLogService,
+	modelService interfaces.ModelService,
+	cfg *config.Config,
 ) interfaces.DataSourceService {
 	return &DataSourceService{
 		dsRepo:            dsRepo,
@@ -61,7 +68,43 @@ func NewDataSourceService(
 		tenantRepo:        tenantRepo,
 		tagService:        tagService,
 		audit:             audit,
+		modelService:      modelService,
+		cfg:               cfg,
 	}
+}
+
+// withAnalysisModel attaches the knowledge base's chat model for connectors that run a
+// model-assisted step during sync. The model is chosen like the knowledge base
+// description: the profile model, falling back to the summary model. A missing or
+// unavailable model leaves the sync without the step; it never fails the sync.
+func (s *DataSourceService) withAnalysisModel(ctx context.Context, kb *types.KnowledgeBase) context.Context {
+	if s.modelService == nil || kb == nil {
+		return ctx
+	}
+	modelID := ""
+	if kb.ProfileConfig != nil {
+		modelID = strings.TrimSpace(kb.ProfileConfig.ModelID)
+	}
+	if modelID == "" {
+		modelID = strings.TrimSpace(kb.SummaryModelID)
+	}
+	if modelID == "" {
+		return ctx
+	}
+	chatModel, err := s.modelService.GetChatModel(ctx, modelID)
+	if err != nil {
+		logger.Warnf(ctx, "[DataSource] analysis model %s unavailable, skipping model-assisted analysis: %v", modelID, err)
+		return ctx
+	}
+	template := ""
+	if s.cfg != nil {
+		template = s.cfg.Conversation.DBTableAnalysisPrompt
+	}
+	return datasource.WithAnalysis(ctx, datasource.Analysis{
+		Model:          chatModel,
+		PromptTemplate: template,
+		Language:       types.LanguageNameFromContext(ctx),
+	})
 }
 
 // CreateDataSource creates a new data source configuration
@@ -116,7 +159,17 @@ func (s *DataSourceService) CreateDataSource(ctx context.Context, ds *types.Data
 	recordKBActivity(ctx, s.audit, ds.TenantID, ds.KnowledgeBaseID, types.AuditActionDataSourceCreated,
 		"data_source", ds.ID, types.AuditOutcomeSuccess,
 		map[string]any{"name": ds.Name, "type": ds.Type})
+	// Table pages come from wiki compilation. Without wiki the table documents are only
+	// indexed for retrieval; tell the client, but do not block creation.
+	if isExternalDBType(ds.Type) && !kb.IsWikiEnabled() {
+		ds.Notice = types.DataSourceNoticeWikiDisabled
+	}
 	return ds, nil
+}
+
+// isExternalDBType reports whether a connector extracts tables from an external database.
+func isExternalDBType(dsType string) bool {
+	return dsType == types.ConnectorTypeMySQL || dsType == types.ConnectorTypePostgres
 }
 
 // GetDataSource retrieves a data source by ID
@@ -126,6 +179,63 @@ func (s *DataSourceService) GetDataSource(ctx context.Context, id string) (*type
 		return nil, err
 	}
 	return ds, nil
+}
+
+// RunExternalQuery runs one checked, read-only SQL statement against a MySQL or PostgreSQL
+// data source. The connector checks the statement and runs it in a READ ONLY transaction.
+// Every attempt is audited with a digest of the SQL, never its text.
+func (s *DataSourceService) RunExternalQuery(
+	ctx context.Context, dsID, sqlText string, limits types.ExternalQueryLimits,
+) (*types.ExternalQueryResult, error) {
+	ds, err := s.GetDataSource(ctx, dsID)
+	if err != nil {
+		return nil, err
+	}
+	if !isExternalDBType(ds.Type) {
+		return nil, fmt.Errorf("%w: data source %s is not a MySQL or PostgreSQL source", datasource.ErrInvalidConfig, dsID)
+	}
+	connector, err := s.connectorRegistry.Get(ds.Type)
+	if err != nil {
+		return nil, err
+	}
+	querier, ok := connector.(datasource.ExternalQuerier)
+	if !ok {
+		return nil, fmt.Errorf("%w: connector %s cannot run queries", datasource.ErrInvalidConfig, ds.Type)
+	}
+	cfg, err := ds.ParseConfig()
+	if err != nil {
+		return nil, err
+	}
+	cursor, err := ds.ParseSyncCursor()
+	if err != nil {
+		return nil, err
+	}
+
+	start := time.Now()
+	res, err := querier.RunQuery(ctx, cfg, cursor, sqlText, limits)
+	outcome := types.AuditOutcomeSuccess
+	details := map[string]any{
+		"sql_sha256":  sqlDigest(sqlText),
+		"sql_chars":   len([]rune(sqlText)),
+		"duration_ms": time.Since(start).Milliseconds(),
+	}
+	if err != nil {
+		outcome = types.AuditOutcomeFailed
+		details["error"] = truncateString(err.Error(), 300)
+	} else {
+		details["row_count"] = len(res.Rows)
+		details["truncated"] = res.Truncated
+		details["bytes"] = res.Bytes
+	}
+	recordKBActivity(ctx, s.audit, ds.TenantID, ds.KnowledgeBaseID, types.AuditActionDataSourceQueried,
+		"data_source", ds.ID, outcome, details)
+	return res, err
+}
+
+// sqlDigest identifies a statement in the audit log without storing its text.
+func sqlDigest(sqlText string) string {
+	sum := sha256.Sum256([]byte(sqlText))
+	return hex.EncodeToString(sum[:8])
 }
 
 // ListDataSources lists all data sources for a knowledge base
@@ -679,6 +789,8 @@ func (s *DataSourceService) ProcessSync(ctx context.Context, task *asynq.Task) e
 	// Surface the KB's multimodal/VLM state to the connector so it only extracts
 	// embedded images for OCR when the KB can actually ingest them (never persisted).
 	config.MultimodalEnabled = kb.IsMultimodalEnabled()
+	// Connectors with a model-assisted step (L4) get the knowledge base's chat model.
+	ctx = s.withAnalysisModel(ctx, kb)
 
 	// Streaming path: connectors that support it interleave fetch→ingest→
 	// checkpoint so a large sync bounds memory and resumes after a timeout
@@ -1247,7 +1359,9 @@ func allFetchedItemsFailedError(result *types.SyncResult) error {
 }
 
 // ValidateCredentials tests connectivity using raw credentials without persisting anything.
-func (s *DataSourceService) ValidateCredentials(ctx context.Context, connectorType string, credentials map[string]interface{}) error {
+func (s *DataSourceService) ValidateCredentials(
+	ctx context.Context, connectorType string, credentials, settings map[string]interface{},
+) error {
 	connector, err := s.connectorRegistry.Get(connectorType)
 	if err != nil {
 		return err
@@ -1255,6 +1369,7 @@ func (s *DataSourceService) ValidateCredentials(ctx context.Context, connectorTy
 	config := &types.DataSourceConfig{
 		Type:        connectorType,
 		Credentials: credentials,
+		Settings:    settings,
 	}
 	if err := connector.Validate(ctx, config); err != nil {
 		return err

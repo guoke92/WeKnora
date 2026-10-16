@@ -97,6 +97,7 @@ type agentService struct {
 	browserSkill          *browserskill.Manager
 	userRepo              interfaces.UserRepository
 	graphRepo             interfaces.RetrieveGraphRepository
+	dataSourceService     interfaces.DataSourceService
 	cfg                   *config.Config
 	modelService          interfaces.ModelService
 	mcpServiceService     interfaces.MCPServiceService
@@ -154,11 +155,13 @@ func NewAgentService(
 	browserSkill *browserskill.Manager,
 	userRepo interfaces.UserRepository,
 	graphRepo interfaces.RetrieveGraphRepository,
+	dataSourceService interfaces.DataSourceService,
 ) interfaces.AgentService {
 	svc := &agentService{
 		browserSkill:         browserSkill,
 		userRepo:             userRepo,
 		graphRepo:            graphRepo,
+		dataSourceService:    dataSourceService,
 		cfg:                  cfg,
 		modelService:         modelService,
 		knowledgeBaseService: knowledgeBaseService,
@@ -1089,6 +1092,7 @@ func (s *agentService) registerTools(
 			tools.ToolListDocuments:       true,
 			tools.ToolQueryKnowledgeGraph: true,
 			tools.ToolDatabaseQuery:       true,
+			tools.ToolExternalDBQuery:     true,
 			tools.ToolDataAnalysis:        true,
 			tools.ToolDataSchema:          true,
 			// Wiki tools also require at least one KB in scope.
@@ -1270,6 +1274,8 @@ func (s *agentService) registerTools(
 			toolToRegister = tools.NewSearchMemoryTool(s.memoryService)
 		case tools.ToolDatabaseQuery:
 			toolToRegister = tools.NewDatabaseQueryTool(s.db, config.SearchTargets)
+		case tools.ToolExternalDBQuery:
+			toolToRegister = tools.NewExternalDBQueryTool(s.dataSourceService, config.SearchTargets)
 		case tools.ToolWebSearch:
 			toolToRegister = tools.NewWebSearchTool(
 				s.webSearchService,

@@ -2501,6 +2501,7 @@ const toolTexts = computed<Record<string, ToolText>>(() => ({
   list_documents: { label: t('agentEditor.tools.listDocuments'), description: t('agentEditor.tools.listDocumentsDesc') },
   query_knowledge_graph: { label: t('agentEditor.tools.queryGraph'), description: t('agentEditor.tools.queryGraphDesc') },
   database_query: { label: t('agentEditor.tools.dbQuery'), description: t('agentEditor.tools.dbQueryDesc') },
+  external_db_query: { label: t('agentEditor.tools.externalDbQuery'), description: t('agentEditor.tools.externalDbQueryDesc') },
   wiki_search: { label: t('agentEditor.tools.wikiSearch'), description: t('agentEditor.tools.wikiSearchDesc') },
   wiki_read_page: { label: t('agentEditor.tools.wikiReadPage'), description: t('agentEditor.tools.wikiReadPageDesc') },
   wiki_flag_issue: { label: t('agentEditor.tools.wikiFlagIssue'), description: t('agentEditor.tools.wikiFlagIssueDesc') },
@@ -3309,6 +3310,7 @@ const presetKbMismatchKeyMap: Record<string, string> = {
   'wiki-qa': 'wikiQa',
   'hybrid-rag-wiki': 'hybridRagWiki',
   'data-analysis': 'dataAnalysis',
+  'external-db-qa': 'externalDbQa',
 };
 const presetKbMismatchReason = (preset: AgentTypePreset): string => {
   const subKey = presetKbMismatchKeyMap[preset.id];

@@ -179,6 +179,7 @@ var toolDisplayNames = map[string]string{
 	agenttools.ToolAskUser:                   "向用户提问",
 	agenttools.ToolSearchMemory:              "查询长期记忆",
 	agenttools.ToolDatabaseQuery:             "查询数据",
+	agenttools.ToolExternalDBQuery:           "查询外部数据库",
 	agenttools.ToolDataAnalysis:              "数据分析",
 	agenttools.ToolDataSchema:                "查看数据结构",
 	agenttools.ToolWebSearch:                 "搜索网页",

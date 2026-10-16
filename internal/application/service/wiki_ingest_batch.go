@@ -1389,8 +1389,9 @@ func (s *wikiIngestService) mapOneDocument(
 		return nil, nil, nil
 	}
 
+	kn, knErr := s.knowledgeSvc.GetKnowledgeByIDOnly(ctx, knowledgeID)
 	docTitle := knowledgeID
-	if kn, err := s.knowledgeSvc.GetKnowledgeByIDOnly(ctx, knowledgeID); err == nil && kn != nil && kn.Title != "" {
+	if knErr == nil && kn != nil && kn.Title != "" {
 		docTitle = kn.Title
 	} else {
 		for _, ch := range chunks {
@@ -1401,6 +1402,13 @@ func (s *wikiIngestService) mapOneDocument(
 					break
 				}
 			}
+		}
+	}
+	// Documents from external databases describe a table: tell the compiler what to
+	// extract from them (the hint is added after the text-content check above).
+	if knErr == nil && kn != nil {
+		if hint := compileHintForChannel(kn.Channel); hint != "" {
+			content = hint + "\n\n" + content
 		}
 	}
 

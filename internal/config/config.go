@@ -159,6 +159,8 @@ type ConversationConfig struct {
 
 	// GenerateKBDescriptionPromptID selects the knowledge-base description template.
 	GenerateKBDescriptionPromptID string `yaml:"generate_kb_description_prompt_id" json:"generate_kb_description_prompt_id"` //nolint:lll // one-line struct tag
+	// DBTableAnalysisPromptID selects the external database table analysis template.
+	DBTableAnalysisPromptID string `yaml:"db_table_analysis_prompt_id" json:"db_table_analysis_prompt_id"`
 
 	// Resolved prompt text fields (populated by backfill, not from YAML)
 	FallbackPrompt             string `yaml:"-" json:"fallback_prompt"`
@@ -172,6 +174,9 @@ type ConversationConfig struct {
 
 	// GenerateKBDescriptionPrompt is the resolved knowledge-base description template text.
 	GenerateKBDescriptionPrompt string `yaml:"-" json:"generate_kb_description_prompt"`
+
+	// DBTableAnalysisPrompt is the resolved external database table analysis template text.
+	DBTableAnalysisPrompt string `yaml:"-" json:"db_table_analysis_prompt"`
 
 	// IntentSystemPrompts maps intent values (e.g. "greeting", "chitchat") to
 	// system prompt text. Populated by backfill from IntentPrompts templates.
@@ -412,10 +417,12 @@ type PromptTemplatesConfig struct {
 	GenerateSummary      []PromptTemplate `yaml:"generate_summary"       json:"generate_summary,omitempty"`
 	// GenerateKBDescription writes the knowledge-base gist from the document profile aggregate.
 	GenerateKBDescription []PromptTemplate `yaml:"generate_kb_description" json:"generate_kb_description,omitempty"` //nolint:lll // one-line struct tag
-	KeywordsExtraction    []PromptTemplate `yaml:"keywords_extraction"    json:"keywords_extraction,omitempty"`
-	AgentSystemPrompt     []PromptTemplate `yaml:"agent_system_prompt"    json:"agent_system_prompt,omitempty"`
-	GraphExtraction       []PromptTemplate `yaml:"graph_extraction"       json:"graph_extraction,omitempty"`
-	GenerateQuestions     []PromptTemplate `yaml:"generate_questions"     json:"generate_questions,omitempty"`
+	// DBTableAnalysis explains one external database table and judges its candidate relations.
+	DBTableAnalysis    []PromptTemplate `yaml:"db_table_analysis"      json:"db_table_analysis,omitempty"`
+	KeywordsExtraction []PromptTemplate `yaml:"keywords_extraction"    json:"keywords_extraction,omitempty"`
+	AgentSystemPrompt  []PromptTemplate `yaml:"agent_system_prompt"    json:"agent_system_prompt,omitempty"`
+	GraphExtraction    []PromptTemplate `yaml:"graph_extraction"       json:"graph_extraction,omitempty"`
+	GenerateQuestions  []PromptTemplate `yaml:"generate_questions"     json:"generate_questions,omitempty"`
 	// IntentPrompts holds per-intent system prompt overrides (template ID = intent value).
 	IntentPrompts []PromptTemplate `yaml:"intent_prompts" json:"intent_prompts,omitempty"`
 }
@@ -1060,6 +1067,18 @@ func backfillConversationDefaults(cfg *Config) {
 			fmt.Printf("Warning: generate_kb_description_prompt_id %q not found\n", conv.GenerateKBDescriptionPromptID)
 		}
 	}
+	if conv.DBTableAnalysisPromptID != "" {
+		if t := FindTemplateByID(pt, conv.DBTableAnalysisPromptID); t != nil {
+			conv.DBTableAnalysisPrompt = t.Content
+		} else {
+			fmt.Printf("Warning: db_table_analysis_prompt_id %q not found\n", conv.DBTableAnalysisPromptID)
+		}
+	}
+	if conv.DBTableAnalysisPrompt == "" && pt != nil {
+		if t := DefaultTemplate(pt.DBTableAnalysis); t != nil {
+			conv.DBTableAnalysisPrompt = t.Content
+		}
+	}
 	if conv.ExtractEntitiesPromptID != "" {
 		if t := FindTemplateByID(pt, conv.ExtractEntitiesPromptID); t != nil {
 			conv.ExtractEntitiesPrompt = t.Content
@@ -1177,6 +1196,7 @@ func loadPromptTemplates(configDir string) (*PromptTemplatesConfig, error) {
 		"generate_session_title.yaml":  &config.GenerateSessionTitle,
 		"generate_summary.yaml":        &config.GenerateSummary,
 		"generate_kb_description.yaml": &config.GenerateKBDescription,
+		"db_table_analysis.yaml":       &config.DBTableAnalysis,
 		"keywords_extraction.yaml":     &config.KeywordsExtraction,
 		"agent_system_prompt.yaml":     &config.AgentSystemPrompt,
 		"graph_extraction.yaml":        &config.GraphExtraction,

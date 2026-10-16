@@ -89,6 +89,10 @@ is always exposed as the fixed table `dataset`, so only `knowledge_id` is
 decoded. Wiki issue IDs use the same lifecycle
 via an `iN` handle space.
 
+`external_db_query` is opaque in both directions: its SQL is not decoded, because
+a literal such as `'c3'` is a value in the external database, and its result rows
+keep the database's own identities.
+
 Dynamic MCP tools are intentionally opaque in both arguments and results.
 Their schemas and identity semantics are controlled by the MCP server, so the
 application must not guess that an arbitrary `id`, `knowledge_id`, or `url`

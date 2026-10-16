@@ -4189,6 +4189,7 @@ export default {
     lengthThousands: '{value}千文字',
     lengthTenThousands: '{value}万文字',
     noDatabaseRecords: '一致するレコードが見つかりません',
+    externalQueryTruncated: '行数またはサイズの上限に達したため、先頭の行のみ表示しています',
     nullValuePlaceholder: '<NULL>',
     chunkCountValue: '{count}件のチャンク',
     documentDescriptionLabel: '説明:',
@@ -6352,7 +6353,8 @@ export default {
       shellExec: 'サンドボックスコマンドを実行',
       dataAnalysis: 'データ分析',
       dataSchema: 'データスキーマ',
-      databaseQuery: 'データベース照会'
+      databaseQuery: 'データベース照会',
+      externalDbQuery: '外部データベース照会'
     },
     skillFiles: {
       heading: 'スキルファイル',
@@ -6649,6 +6651,8 @@ export default {
       getDocInfoDesc: 'ドキュメントのメタデータを表示します',
       dbQuery: 'データベースを照会',
       dbQueryDesc: 'データベースから情報を照会します',
+      externalDbQuery: '外部データベースを照会',
+      externalDbQueryDesc: '同期済みの MySQL / PostgreSQL データソースに対して読み取り専用で照会します',
       dataAnalysis: 'データ分析',
       dataAnalysisDesc: 'データファイルを理解し、データ分析を実行します',
       dataSchema: 'データスキーマを表示',
@@ -6816,6 +6820,7 @@ export default {
         wikiQa: 'Wikiが有効になっていません',
         hybridRagWiki: '利用できる検索手段がありません',
         dataAnalysis: 'RAGが必要です（FAQは非対応）',
+        externalDbQa: 'Wiki が有効になっていません',
         quickAnswer: 'クイック回答モードにはRAG検索が必要です',
         generic: '現在のタイプと互換性がありません'
       },
@@ -6992,6 +6997,29 @@ export default {
       paths: 'ディレクトリ', pathsPlaceholder: '1行に1つのディレクトリを入力します。空欄の場合はプロジェクト全体を同期します',
       addProject: 'プロジェクトを追加', projectRequired: 'GitLabプロジェクトを1つ以上追加してください',
     },
+    sql: {
+      selectionRequired: 'スキーマまたはテーブルを少なくとも1つ選択してください',
+      wikiDisabledNotice: 'このナレッジベースでは Wiki が無効です。テーブル文書は検索用にのみインデックスされ、テーブルページは生成されません。ナレッジベース設定で Wiki を有効にすると生成されます。',
+      user: 'ユーザー名',
+      password: 'パスワード',
+      host: 'ホスト',
+      port: 'ポート',
+      database: 'データベース',
+      tlsMode: 'TLSモード',
+      tlsDisable: '無効',
+      tlsRequire: 'TLSを使用（証明書は検証しない）',
+      tlsVerifyFull: 'TLSを使用し証明書を検証',
+      connectionHint: '専用の読み取り専用アカウントの利用を推奨します。クエリは読み取り専用トランザクション内で実行されますが、最小権限の原則に従ってください。',
+      selectionHint: 'スキーマ全体または個別のテーブルを選択できます。スキーマを選択すると配下のすべてのテーブルが含まれます。',
+      profileSection: '列プロファイル',
+      profileEnabled: '行のサンプルから列プロファイルを作成',
+      profileValues: '値の特徴（範囲、TopK）を含めます。機密列の値は表示されません。',
+      topK: '列ごとのTopK値の数',
+      sampleRows: 'テーブルごとのサンプル行数',
+      maxTables: '1回の同期で対象とする最大テーブル数',
+      maskedColumns: '追加の機密列',
+      maskedColumnsHint: 'カンマ区切りの列名です。値は表示されません。password、phone、emailなどの一般的な機密列は自動的にマスクされます。'
+    },
     seafile: {
       baseUrl: 'Seafile URL', apiToken: 'APIトークン',
       apiTokenHint: 'Seafileの「設定 → Web APIトークン」で生成します。アカウントに選択したライブラリの読み取り権限があれば十分で、トークンはファイルのダウンロード要求には送信されません。',
@@ -7074,7 +7102,9 @@ export default {
       rss: 'RSS / Atomフィード',
       ima: 'Tencent IMA',
       gitlab: 'GitLab',
-      seafile: 'Seafile'
+      seafile: 'Seafile',
+      mysql: 'MySQL',
+      postgres: 'PostgreSQL'
     },
     connectorDesc: {
       feishu: 'Feishu Wikiからドキュメント、スプレッドシート、ファイルを同期します',
@@ -7088,7 +7118,9 @@ export default {
       rss: 'RSS / Atomフィードから記事を同期します',
       ima: 'Tencent IMAのナレッジベースからドキュメント、ノート、ファイルを同期します（AIセッションと動画の解析は非対応）',
       gitlab: 'GitLabプロジェクトからファイルを同期します',
-      seafile: 'Seafileライブラリのフォルダとファイルを同期します'
+      seafile: 'Seafileライブラリのフォルダとファイルを同期します',
+      mysql: 'MySQLテーブルからスキーマ、列プロファイル、関係を抽出します（読み取り専用）',
+      postgres: 'PostgreSQLテーブルからスキーマ、列プロファイル、関係を抽出します（読み取り専用）'
     },
     drive: {
       folderTokenLabel: 'Driveフォルダトークン',
@@ -7237,7 +7269,9 @@ export default {
       seafile_source_changed: '取得中にSeafileファイルが変更されました。次回の同期で再試行します。',
       seafile_invalid_response: 'Seafileから解析できない応答が返されました。サーバのバージョンとリバースプロキシを確認してください。',
       seafile_ssrf_blocked: 'SeafileのダウンロードURLがSSRFポリシーでブロックされました。fileserverのホストをSSRF_WHITELISTに追加してください。',
-      seafile_fetch_failed: 'Seafileからファイルを取得できませんでした。次回の同期で再試行します。'
+      seafile_fetch_failed: 'Seafileからファイルを取得できませんでした。次回の同期で再試行します。',
+      describe_failed: 'テーブル構造を読み取れませんでした。詳細はサーバーログを確認してください。次回の同期で再試行します。',
+      max_tables_exceeded: '1回の同期のテーブル数上限に達したため、一部のテーブルをスキップしました。上限を上げるか選択範囲を絞ってください。'
     }
   },
   integrations: {

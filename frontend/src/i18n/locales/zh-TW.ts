@@ -994,6 +994,29 @@ export default {
       paths: '同步目錄', pathsPlaceholder: '每行一個目錄；留空同步整個專案',
       addProject: '新增專案', projectRequired: '請至少新增一個 GitLab 專案',
     },
+    sql: {
+      selectionRequired: '請至少選擇一個 Schema 或資料表',
+      wikiDisabledNotice: '此知識庫未開啟 Wiki：資料表文件僅用於檢索，不會生成表頁。在知識庫設定中開啟 Wiki 後即可生成表頁。',
+      user: '使用者名稱',
+      password: '密碼',
+      host: '主機',
+      port: '連接埠',
+      database: '資料庫',
+      tlsMode: 'TLS 模式',
+      tlsDisable: '不啟用',
+      tlsRequire: '啟用 TLS（不驗證憑證）',
+      tlsVerifyFull: '啟用 TLS 並驗證憑證',
+      connectionHint: '建議使用專用的唯讀帳號。查詢在唯讀交易中執行，但仍建議遵循最小權限原則。',
+      selectionHint: '可選擇整個 Schema 或單獨的資料表；選取 Schema 即包含其下所有資料表。',
+      profileSection: '欄位畫像',
+      profileEnabled: '基於樣本列採集欄位畫像',
+      profileValues: '採集取值特徵（範圍、TopK）。敏感欄位永不展示取值。',
+      topK: '每欄 TopK 取值數',
+      sampleRows: '每表樣本列數',
+      maxTables: '單次同步最多資料表數',
+      maskedColumns: '額外的敏感欄位',
+      maskedColumnsHint: '以逗號分隔的欄位名，其取值永不展示。password、phone、email 等常見敏感欄位會自動脫敏。'
+    },
     seafile: {
       baseUrl: 'Seafile 地址', apiToken: 'API 權杖',
       apiTokenHint: '在 Seafile「設定 → Web API 權杖」中生成；帳號對所選資料庫有讀取權限即可，權杖不會隨檔案下載請求傳送。',
@@ -1162,7 +1185,9 @@ export default {
       ima: '同步騰訊 IMA 知識庫中的文件、筆記與檔案（暫不支持 AI 會話與影片解析）',
       rss: '同步 RSS / Atom 訂閱源中的文章',
       gitlab: '同步 GitLab 專案中的檔案',
-      seafile: '同步 Seafile 資料庫中的目錄與檔案'
+      seafile: '同步 Seafile 資料庫中的目錄與檔案',
+      mysql: '從 MySQL 資料表提取結構、欄位畫像與關係（唯讀）',
+      postgres: '從 PostgreSQL 資料表提取結構、欄位畫像與關係（唯讀）'
     },
     connector: {
       feishu: '飛書',
@@ -1176,7 +1201,9 @@ export default {
       ima: '騰訊 IMA',
       rss: 'RSS / Atom 訂閱',
       gitlab: 'GitLab',
-      seafile: 'Seafile'
+      seafile: 'Seafile',
+      mysql: 'MySQL',
+      postgres: 'PostgreSQL'
     },
     logDetail: {
       startTime: '開始時間',
@@ -1248,7 +1275,9 @@ export default {
       seafile_source_changed: 'Seafile 檔案在獲取過程中發生變化，下次同步將重試。',
       seafile_invalid_response: 'Seafile 回傳了無法解析的回應，請檢查伺服器版本與反向代理設定。',
       seafile_ssrf_blocked: 'Seafile 檔案下載地址被 SSRF 策略攔截，請將 fileserver 網域加入 SSRF_WHITELIST。',
-      seafile_fetch_failed: '從 Seafile 獲取檔案失敗，下次同步將重試。'
+      seafile_fetch_failed: '從 Seafile 獲取檔案失敗，下次同步將重試。',
+      describe_failed: '讀取資料表結構失敗，詳見伺服器日誌，下次同步將重試。',
+      max_tables_exceeded: '已達到單次同步的資料表數上限，部分資料表被跳過；可調大「單次同步最多資料表數」或縮小選擇範圍。'
     },
   },
   ollama: {
@@ -1384,6 +1413,7 @@ export default {
         wikiQa: '未啟用 Wiki',
         hybridRagWiki: '未啟用任何檢索能力',
         dataAnalysis: '需啟用 RAG（不支持 FAQ）',
+        externalDbQa: '未啟用 Wiki',
         quickAnswer: '快速問答模式需啟用 RAG 檢索',
         generic: '不適用於當前類型'
       }
@@ -1519,6 +1549,8 @@ export default {
       getDocInfoDesc: '查看文件元資料',
       dbQuery: '查詢資料庫',
       dbQueryDesc: '查詢資料庫中的資訊',
+      externalDbQuery: '外部資料庫查詢',
+      externalDbQueryDesc: '對已同步的 MySQL / PostgreSQL 資料來源執行唯讀查詢',
       dataAnalysis: '資料分析',
       dataAnalysisDesc: '理解資料檔案並進行資料分析',
       dataSchema: '查看資料元資訊',
@@ -1830,7 +1862,8 @@ export default {
       shellExec: '執行沙箱命令',
       dataAnalysis: '資料分析',
       dataSchema: '資料結構',
-      databaseQuery: '資料庫查詢'
+      databaseQuery: '資料庫查詢',
+      externalDbQuery: '外部資料庫查詢'
     },
     skillFiles: {
       heading: '技能檔案',
@@ -4121,6 +4154,7 @@ export default {
     lengthThousands: '{value} 千字',
     lengthTenThousands: '{value} 萬字',
     noDatabaseRecords: '未找到比對的記錄',
+    externalQueryTruncated: '結果已達到列數或大小上限，僅顯示前面的列',
     nullValuePlaceholder: '<NULL>',
     chunkCountValue: '{count} 個片段',
     documentDescriptionLabel: '文件描述:',
